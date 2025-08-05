@@ -91,7 +91,7 @@ services:
   #   networks:
   #     - vllm-network
 
-  # Prometheus for metrics collection
+  # Prometheus for metrics collection  
   prometheus:
     image: prom/prometheus:latest
     container_name: vllm-prometheus
@@ -100,10 +100,34 @@ services:
     ports:
       - "7101:9090"
     command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
       - '--web.enable-lifecycle'
+    user: "0:0"
+    entrypoint: |
+      sh -c '
+      mkdir -p /etc/prometheus
+      cat > /etc/prometheus/prometheus.yml << EOF
+      global:
+        scrape_interval: 15s
+        evaluation_interval: 15s
+
+      scrape_configs:
+        - job_name: "prometheus"
+          static_configs:
+            - targets: ["localhost:9090"]
+
+        - job_name: "vllm-engine"
+          static_configs:
+            - targets: ["vllm-engine:8000"]
+          metrics_path: /metrics
+          scrape_interval: 10s
+          scrape_timeout: 5s
+      EOF
+      exec /bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --web.console.libraries=/usr/share/prometheus/console_libraries --web.console.templates=/usr/share/prometheus/consoles --web.enable-lifecycle
+      '
     depends_on:
       - vllm-engine
     networks:
