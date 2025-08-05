@@ -21,8 +21,8 @@ services:
       - TRUST_REMOTE_CODE=${TRUST_REMOTE_CODE:-false}
       
       # CUDA Configuration
-      - CUDA_VISIBLE_DEVICES=all
-      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=0
     volumes:
       - huggingface_cache:/root/.cache/huggingface
       - model_data:/workspace/models
@@ -78,6 +78,11 @@ services:
       - VLLM_API_KEY=${VLLM_API_KEY:-your-vllm-api-key}
     ports:
       - "7100:8000"  # Main API port
+    command:
+      - --service-discovery=static
+      - --static-backends=http://vllm-engine:8000
+      - --static-models=facebook/opt-125m
+      - --routing-logic=roundrobin
     depends_on:
       - vllm-engine
     healthcheck:
