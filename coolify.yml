@@ -7,7 +7,7 @@ services:
   # Main application (router as entry point)
   main:
     extends:
-      file: docker-compose.coolify.yml
+      file: docker-compose.yml
       service: vllm-router
     labels:
       - "coolify.managed=true"
@@ -18,7 +18,7 @@ services:
   # vLLM Engine
   vllm-engine:
     extends:
-      file: docker-compose.coolify.yml
+      file: docker-compose.yml
       service: vllm-engine
     labels:
       - "coolify.managed=true"
@@ -27,14 +27,14 @@ services:
   # Monitoring services
   prometheus:
     extends:
-      file: docker-compose.coolify.yml
+      file: docker-compose.yml
       service: prometheus
     labels:
       - "coolify.managed=true"
       
   grafana:
     extends:
-      file: docker-compose.coolify.yml
+      file: docker-compose.yml
       service: grafana
     labels:
       - "coolify.managed=true"
@@ -42,7 +42,7 @@ services:
 # Coolify-specific settings
 x-coolify:
   buildpack: docker-compose
-  compose-file: docker-compose.coolify.yml
+  compose-file: docker-compose.yml
   gpu-required: true
   minimum-memory: 32GB
   recommended-gpu: 

@@ -30,7 +30,7 @@ This guide provides instructions for deploying the vLLM Production Stack on Cool
 3. **Deploy via Coolify**
    - In Coolify, create a new "Docker Compose" resource
    - Point to your repository
-   - Set the compose file to `docker-compose.coolify.yml`
+   - The default `docker-compose.yml` will be used automatically
    - Enable GPU support in the resource settings
    - Deploy
 
