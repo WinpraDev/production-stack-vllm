@@ -42,7 +42,7 @@ If you prefer to deploy components separately:
 ```yaml
 # In Coolify, create a Docker resource with:
 Image: vllm/vllm-openai:latest
-Port: 8000
+Port: 7100
 GPU: Enabled
 Environment Variables:
   - HUGGING_FACE_HUB_TOKEN=your-token
@@ -54,7 +54,7 @@ Command: --host 0.0.0.0 --port 8000 --model facebook/opt-125m --api-key your-api
 #### 2. Router (Optional)
 ```yaml
 Image: lmcache/lmstack-router:latest
-Port: 8000
+Port: 7100
 Environment Variables:
   - SERVICE_DISCOVERY=static
   - STATIC_BACKENDS=http://vllm-engine:8000
@@ -110,9 +110,9 @@ TRUST_REMOTE_CODE=true  # If model requires custom code
 ### Access Points
 
 After deployment, access:
-- **API Endpoint**: `http://your-coolify-domain:8000`
-- **Prometheus**: `http://your-coolify-domain:9090`
-- **Grafana**: `http://your-coolify-domain:3000`
+- **API Endpoint**: `http://your-coolify-domain:7100`
+- **Prometheus**: `http://your-coolify-domain:7101`
+- **Grafana**: `http://your-coolify-domain:7102`
 
 ### Grafana Dashboard
 
@@ -130,14 +130,14 @@ After deployment, access:
 
 ```bash
 # Health check
-curl http://your-coolify-domain:8000/health
+curl http://your-coolify-domain:7100/health
 
 # List models
-curl http://your-coolify-domain:8000/v1/models \
+curl http://your-coolify-domain:7100/v1/models \
   -H "Authorization: Bearer your-api-key"
 
 # Chat completion
-curl http://your-coolify-domain:8000/v1/chat/completions \
+curl http://your-coolify-domain:7100/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-api-key" \
   -d '{
@@ -153,7 +153,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key="your-api-key",
-    base_url="http://your-coolify-domain:8000/v1"
+    base_url="http://your-coolify-domain:7100/v1"
 )
 
 response = client.chat.completions.create(
