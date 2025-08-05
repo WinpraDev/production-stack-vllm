@@ -1,0 +1,52 @@
+# Coolify-specific configuration
+# This file is used when deploying via Coolify's Git integration
+
+version: '3.8'
+
+services:
+  # Main application (router as entry point)
+  main:
+    extends:
+      file: docker-compose.coolify.yml
+      service: vllm-router
+    labels:
+      - "coolify.managed=true"
+      - "coolify.type=application"
+      - "coolify.name=vLLM Production Stack"
+      - "coolify.description=Production-ready vLLM deployment with router and monitoring"
+      
+  # vLLM Engine
+  vllm-engine:
+    extends:
+      file: docker-compose.coolify.yml
+      service: vllm-engine
+    labels:
+      - "coolify.managed=true"
+      - "coolify.gpu.enabled=true"
+      
+  # Monitoring services
+  prometheus:
+    extends:
+      file: docker-compose.coolify.yml
+      service: prometheus
+    labels:
+      - "coolify.managed=true"
+      
+  grafana:
+    extends:
+      file: docker-compose.coolify.yml
+      service: grafana
+    labels:
+      - "coolify.managed=true"
+
+# Coolify-specific settings
+x-coolify:
+  buildpack: docker-compose
+  compose-file: docker-compose.coolify.yml
+  gpu-required: true
+  minimum-memory: 32GB
+  recommended-gpu: 
+    - "NVIDIA T4"
+    - "NVIDIA V100"
+    - "NVIDIA A10"
+    - "NVIDIA A100"

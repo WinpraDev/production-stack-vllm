@@ -1,0 +1,145 @@
+version: '3.8'
+
+services:
+  # vLLM Engine - The actual model serving component
+  vllm-engine:
+    image: vllm/vllm-openai:latest
+    container_name: vllm-engine
+    runtime: nvidia
+    environment:
+      # Model Configuration
+      - MODEL_NAME=${MODEL_NAME:-facebook/opt-125m}
+      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN}
+      - HF_HOME=/root/.cache/huggingface
+      
+      # vLLM Configuration
+      - VLLM_API_KEY=${VLLM_API_KEY:-your-vllm-api-key}
+      - MAX_MODEL_LEN=${MAX_MODEL_LEN:-4096}
+      - GPU_MEMORY_UTILIZATION=${GPU_MEMORY_UTILIZATION:-0.95}
+      - TENSOR_PARALLEL_SIZE=${TENSOR_PARALLEL_SIZE:-1}
+      - DTYPE=${DTYPE:-auto}
+      - TRUST_REMOTE_CODE=${TRUST_REMOTE_CODE:-false}
+      
+      # CUDA Configuration
+      - CUDA_VISIBLE_DEVICES=all
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - huggingface_cache:/root/.cache/huggingface
+      - model_data:/workspace/models
+    ports:
+      - "8001:8000"  # vLLM internal port
+    command:
+      - --host=0.0.0.0
+      - --port=8000
+      - --model=${MODEL_NAME:-facebook/opt-125m}
+      - --api-key=${VLLM_API_KEY:-your-vllm-api-key}
+      - --tensor-parallel-size=${TENSOR_PARALLEL_SIZE:-1}
+      - --max-model-len=${MAX_MODEL_LEN:-4096}
+      - --dtype=${DTYPE:-auto}
+      - --gpu-memory-utilization=${GPU_MEMORY_UTILIZATION:-0.95}
+      - --enable-prefix-caching
+      - --enable-chunked-prefill
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+        limits:
+          memory: 32G
+        requests:
+          memory: 16G
+    ipc: host
+    shm_size: '16gb'
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s
+    restart: unless-stopped
+    networks:
+      - vllm-network
+
+  # Router - Load balancer and request router
+  vllm-router:
+    image: lmcache/lmstack-router:latest
+    container_name: vllm-router
+    environment:
+      # Router Configuration
+      - SERVICE_DISCOVERY=static
+      - STATIC_BACKENDS=http://vllm-engine:8000
+      - STATIC_MODELS=${MODEL_NAME:-facebook/opt-125m}
+      - ROUTING_LOGIC=${ROUTING_LOGIC:-roundrobin}
+      - ENGINE_SCRAPE_INTERVAL=${ENGINE_SCRAPE_INTERVAL:-15}
+      - REQUEST_STATS_WINDOW=${REQUEST_STATS_WINDOW:-60}
+      - VLLM_API_KEY=${VLLM_API_KEY:-your-vllm-api-key}
+    ports:
+      - "8000:8000"  # Main API port
+    depends_on:
+      - vllm-engine
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - vllm-network
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: vllm-prometheus
+    volumes:
+      - ./prometheus-config.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    depends_on:
+      - vllm-router
+    networks:
+      - vllm-network
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: vllm-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana-dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - vllm-network
+
+networks:
+  vllm-network:
+    driver: bridge
+
+volumes:
+  huggingface_cache:
+    driver: local
+  model_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
