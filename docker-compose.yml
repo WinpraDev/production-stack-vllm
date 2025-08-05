@@ -26,7 +26,8 @@ services:
     volumes:
       - huggingface_cache:/root/.cache/huggingface
       - model_data:/workspace/models
-    # No external ports exposed - accessed internally by router
+    ports:
+      - "7100:8000"  # Direct vLLM access
     command:
       - --host=0.0.0.0
       - --port=8000
@@ -63,36 +64,31 @@ services:
     networks:
       - vllm-network
 
-  # Router - Load balancer and request router
-  vllm-router:
-    image: lmcache/lmstack-router:latest
-    container_name: vllm-router
-    environment:
-      # Router Configuration
-      - SERVICE_DISCOVERY=static
-      - STATIC_BACKENDS=http://vllm-engine:8000
-      - STATIC_MODELS=${MODEL_NAME:-facebook/opt-125m}
-      - ROUTING_LOGIC=${ROUTING_LOGIC:-roundrobin}
-      - ENGINE_SCRAPE_INTERVAL=${ENGINE_SCRAPE_INTERVAL:-15}
-      - REQUEST_STATS_WINDOW=${REQUEST_STATS_WINDOW:-60}
-      - VLLM_API_KEY=${VLLM_API_KEY:-your-vllm-api-key}
-    ports:
-      - "7100:8000"  # Main API port
-    command:
-      - --service-discovery=static
-      - --static-backends=http://vllm-engine:8000
-      - --static-models=facebook/opt-125m
-      - --routing-logic=roundrobin
-    depends_on:
-      - vllm-engine
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    restart: unless-stopped
-    networks:
-      - vllm-network
+  # Router - Load balancer and request router (commented out for simplicity)
+  # vllm-router:
+  #   image: lmcache/lmstack-router:latest
+  #   container_name: vllm-router
+  #   environment:
+  #     - VLLM_API_KEY=${VLLM_API_KEY:-your-vllm-api-key}
+  #   ports:
+  #     - "7200:8000"  # Router port (if enabled)
+  #   command:
+  #     - --service-discovery=static
+  #     - --static-backends=vllm-engine:8000
+  #     - --static-models=facebook/opt-125m
+  #     - --routing-logic=roundrobin
+  #     - --host=0.0.0.0
+  #     - --port=8000
+  #   depends_on:
+  #     - vllm-engine
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+  #   restart: unless-stopped
+  #   networks:
+  #     - vllm-network
 
   # Prometheus for metrics collection
   prometheus:
@@ -107,7 +103,7 @@ services:
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
     depends_on:
-      - vllm-router
+      - vllm-engine
     networks:
       - vllm-network
 
