@@ -26,8 +26,7 @@ services:
     volumes:
       - huggingface_cache:/root/.cache/huggingface
       - model_data:/workspace/models
-    ports:
-      - "8001:8000"  # vLLM internal port
+    # No external ports exposed - accessed internally by router
     command:
       - --host=0.0.0.0
       - --port=8000
