@@ -80,12 +80,12 @@ Popular models and their GPU requirements:
 Adjust these parameters based on your GPU:
 
 ```env
-# For smaller GPUs (T4, RTX 3090)
-MAX_MODEL_LEN=8192
+# For facebook/opt-125m model (default)
+MAX_MODEL_LEN=2048
 GPU_MEMORY_UTILIZATION=0.90
 
-# For larger GPUs (A100)
-MAX_MODEL_LEN=32768
+# For larger models on larger GPUs (A100)
+MAX_MODEL_LEN=4096  # or higher for larger models
 GPU_MEMORY_UTILIZATION=0.95
 ```
 
