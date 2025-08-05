@@ -94,12 +94,10 @@ services:
     image: prom/prometheus:latest
     container_name: vllm-prometheus
     volumes:
-      - ./prometheus-config.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     ports:
       - "7101:9090"
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
@@ -118,8 +116,6 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana-dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
     ports:
       - "7102:3000"
     depends_on:
