@@ -23,6 +23,7 @@ services:
       # CUDA Configuration
       - CUDA_VISIBLE_DEVICES=0
       - NVIDIA_VISIBLE_DEVICES=0
+      - VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
     volumes:
       - huggingface_cache:/root/.cache/huggingface
       - model_data:/workspace/models
