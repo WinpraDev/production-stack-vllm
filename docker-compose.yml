@@ -48,8 +48,6 @@ services:
               capabilities: [gpu]
         limits:
           memory: 32G
-        requests:
-          memory: 16G
     ipc: host
     shm_size: '16gb'
     ulimits:
